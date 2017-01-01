@@ -1,6 +1,4 @@
-/**
- * Add menu items.
- */
+// Add menu items.
 function onOpen() {
   var spreadsheet = SpreadsheetApp.getActive();
   var menuItems = [
@@ -11,52 +9,12 @@ function onOpen() {
   spreadsheet.addMenu('Payroll', menuItems);
 }
 
-function deletePayroll() {
-  // prompt for paystub date 
-  var strDel = Browser.inputBox('Delete Payroll', 'Please enter the date of the paystub to remove (mm/dd/yyyy):', Browser.Buttons.OK_CANCEL);
-  if (strDel == 'cancel') {
-    return;
-  }
-
-  // search for sheet and confirm deletion
-  var spreadsheet = SpreadsheetApp.getActive();
-  var deleteSheet = spreadsheet.getSheetByName(strDel);
-  if(deleteSheet) {
-    var resp = Browser.msgBox('Are you sure?', Utilities.formatString("Located the payroll for %s -- continue with deletion?", strDel), Browser.Buttons.YES_NO);
-    if(resp == 'no') {
-       return;
-    }
-  } else {
-    Browser.msgBox('Nothing to Delete', strDel, Browser.Buttons.OK);
-    return;
-  }
-  
-  // Subtract from YTD sheet
-  removePayrollFromYTD(deleteSheet);
-  
-  // Delete tab and return to template
-  spreadsheet.deleteSheet(deleteSheet);
-  SpreadsheetApp.flush();
-  spreadsheet.getSheetByName('Template').activate();
-  
-  // todo: is it possible to trap the Delete Sheet action from UI and trigger this function? or at least ask if we should adjust YTD before deleting
-}
-
-function rebuildYTD() {
-  Browser.msgBox('Payroll', "Haven't gotten around to this feature yet...", Browser.Buttons.OK);
-  // todo: 
-  // copy current YTD to backup column 
-  // zero out current YTD values
-  // cycle through all paystubs to sum new values
-}
-
 function runPayroll() {
   var spreadsheet = SpreadsheetApp.getActive();
   var templateSheet = spreadsheet.getSheetByName('Template');
   
   // Validate weekly input
-  if(!validateInput())
-  {
+  if(!validateInput()) {
     return;
   }
     
@@ -64,9 +22,10 @@ function runPayroll() {
   var sheetName = Utilities.formatDate(getNamedValue('TempPayDate'), "PST", "MM/dd/yyyy");
   var paystubSheet = spreadsheet.getSheetByName(sheetName);
   if (paystubSheet) {
+    // we already have a paystub for this date. remove that stub's values from YTD before we create a new one.
     removePayrollFromYTD(paystubSheet);
     paystubSheet.clear();
-    SpreadsheetApp.flush();  // ran into a race issue here with YTD -- flush() seems to fix it
+    SpreadsheetApp.flush();  // ran into a race issue here with YTD not getting updated fast enough for the new stub creation -- flush() seems to fix it
   } else {
     paystubSheet = spreadsheet.insertSheet(sheetName, spreadsheet.getNumSheets());
   }  
@@ -80,13 +39,13 @@ function runPayroll() {
   paystubSheet.setRowHeight(43, 10);
   paystubSheet.setRowHeight(44, 10);
     
-  // Update YTD sheet. Grab current values from template before we clean it up
+  // Update YTD sheet. Grab current values from the template before we clean it up
   updateYTDFromCurrent();
     
   // Reset template data
   cleanup();
   
-  // Activate new paystub and pre-set selection for easy printing
+  // Activate new paystub and pre-set selection for printing
   paystubSheet.activate();
   paystubSheet.setActiveSelection(paystubSheet.getRange(1, 1, 45, 6));
 
@@ -95,7 +54,6 @@ function runPayroll() {
 }
 
 function validateInput() {
-
   // hours
   var hrsReg = getNamedValue('TempHoursReg');
   var hrsOT = getNamedValue('TempHoursOT');
@@ -113,7 +71,6 @@ function validateInput() {
   }
     
   // dates
-
   // very basic sanity on pay period
   var begin = getNamedValue('TempPeriodBegin');
   var end = getNamedValue('TempPeriodEnd');
@@ -134,6 +91,46 @@ function validateInput() {
   }
   
   return 1;
+}
+
+function deletePayroll() {
+  // prompt for the date 
+  var strDel = Browser.inputBox('Delete Payroll', 'Please enter the date of the paystub to remove (mm/dd/yyyy):', Browser.Buttons.OK_CANCEL);
+  if (strDel == 'cancel') {
+    return;
+  }
+
+  // search for sheet and confirm deletion
+  var spreadsheet = SpreadsheetApp.getActive();
+  var deleteSheet = spreadsheet.getSheetByName(strDel);
+  if(deleteSheet) {
+    var resp = Browser.msgBox('Are you sure?', Utilities.formatString("Located the payroll for %s -- continue with deletion?", strDel), Browser.Buttons.YES_NO);
+    if(resp == 'no') {
+       return;
+    }
+  } else {
+    Browser.msgBox('Error', Utilities.formatString("Couldn't find a paystub for %s. Nothing to delete. Hint: make sure you are using the form '01/09/2017' rather than '1/9/17'.", strDel), Browser.Buttons.OK);
+    //todo: make this friendier
+    return;
+  }
+  
+  // Subtract from YTD sheet
+  removePayrollFromYTD(deleteSheet);
+  
+  // Delete tab and return to template
+  spreadsheet.deleteSheet(deleteSheet);
+  SpreadsheetApp.flush();
+  spreadsheet.getSheetByName('Template').activate();
+  
+  // todo: is it possible to trap the Delete Sheet action from UI and trigger this function? or at least ask if we should adjust YTD before deleting
+}
+
+function rebuildYTD() {
+  // todo: 
+  // copy current YTD to backup column or sheet
+  // zero out current YTD values
+  // cycle through all paystubs to sum new values
+  Browser.msgBox('Payroll', "Haven't gotten around to this feature yet...", Browser.Buttons.OK);
 }
 
 function updateYTDFromCurrent() {
@@ -176,8 +173,7 @@ function clearNamedValue(valueName) {
 }
 
 function removePayrollFromYTD(payrollSheet) {
-  // note: this will be fragile, we don't have named ranges for the individual payroll sheets so using specific cell IDs instead
-  //       any future change in paystub structure would need to be applied to all past paystubs too. Or just implement named ranges for all paystubs.
+  // note: this will be fragile, we don't have named ranges for the individual payroll sheets so it's using specific cell IDs instead
   var wagesReg = payrollSheet.getRange('E30');
   incrementNamedValue('YTDWagesReg', -wagesReg.getValue());
   
@@ -210,3 +206,4 @@ function dumpLog() {
   var a1 = logSheet.getRange(1,1);
   a1.setValue(logData);
 }
+
