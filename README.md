@@ -7,7 +7,8 @@ A Google Sheets spreadsheet & script to do some simple automated payroll for an 
 * CA income tax [1]
 * CA SDI
 
-You can find the spreadsheet here: https://docs.google.com/spreadsheets/d/15L-TiRN-ro89xmXx4Y03i_63o_UOKGbicadICD-dLa0/edit#gid=0
+The spreadsheet is available here:  
+https://docs.google.com/spreadsheets/d/1R4kWt5e5csR3IFdjX_085xPmb7GRWPxSfw964SpLJEY/edit#gid=0
 
 Make a copy of the sheet in your own account and edit employer/employee name & address. 
 
