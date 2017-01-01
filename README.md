@@ -7,8 +7,6 @@ A Google Sheets spreadsheet & script to do some simple automated payroll for an 
 * CA income tax *(see note below)*
 * CA SDI
 
-*[1] *
-
 #### Notes
 1. Income tax calculations are not performed by the sheet and must be entered manually. Those calculations are complex and require several more inputs than we want to deal with on this sheet. http://www.paycheckcity.com/calculator/hourly/ is a good place to use for PIT calculation.
 1. The sheet is limited to one paystub per pay date, which essentially means it is only useful for paying one person. 
